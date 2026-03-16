@@ -3,11 +3,10 @@ from pathlib import Path
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 def run_node():
-    # Wrap the string in Path() so .exists() works, and use the exact relative path from the TOML
-    INPUT_FILE = Path("../01_ingest/outputs/cleaned_sequences.csv")
-    OUT_DIR = Path("outputs")
-    
-    # Ensure the output directory exists
+    # Look directly into Node 1's output folder
+    # THIS IS THE SILVA STANDARD PATH
+    INPUT_FILE = "/workspace/01_ingest/outputs/cleaned_sequences.csv"
+    OUT_DIR = Path("/workspace/02_features/outputs")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if not INPUT_FILE.exists():
