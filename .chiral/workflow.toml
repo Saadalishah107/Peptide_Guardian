@@ -1,0 +1,5 @@
+[workflow]
+name = "silva_workflow"
+
+[workspace]
+nodes = ["01_ingest"]

@@ -1,0 +1,15 @@
+name = "02_features"
+description = "Extract biophysical features"
+depends_on = ["01_ingest"]
+inputs = ["/workspace/01_ingest/outputs/cleaned_sequences.csv"]
+outputs = ["outputs/peptide_features.csv"]
+
+[container]
+image = "python:3.11-slim"
+
+[scripts]
+pre = "pre_run.sh"
+run = "run.sh"
+
+[storage]
+outputs = "outputs"
