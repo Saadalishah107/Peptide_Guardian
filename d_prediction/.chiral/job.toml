@@ -1,0 +1,19 @@
+name = "d_prediction"
+description = "Phase 4: Lead Discovery & Guardian Scoring"
+depends_on = ["c_model"]
+inputs = [
+    "../b_features/outputs/peptide_features.csv",
+    "../c_model/outputs/peptide_guardian_model.pkl",
+    "../c_model/outputs/label_encoder.pkl"
+]
+outputs = ["outputs/guardian_leads.csv", "outputs/final_discovery_report.html"]
+
+[container]
+image = "python:3.11-slim"
+
+[scripts]
+pre = "pre_run.sh"
+run = "run.sh"
+
+[storage]
+outputs = "outputs"
