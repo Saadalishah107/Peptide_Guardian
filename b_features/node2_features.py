@@ -59,6 +59,13 @@ def run_node():
     feature_df.to_csv(out_path, index=False)
     
     print(f"✅ SUCCESS: {len(results)} features engineered and saved to sidebar!")
+    try:
+        from html_generator import generate_screening_report
+        generate_screening_report(csv_input=str(out_path), output_html=str(OUT_DIR / "screening_report.html"))
+    except Exception as e:
+        print(f"⚠️ Dashboard generation failed: {e}")
+    # -----------------------------
 
+    print(f"✅ SUCCESS: {len(results)} features engineered and dashboard generated!")
 if __name__ == "__main__":
     run_node()

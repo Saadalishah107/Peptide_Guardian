@@ -2,9 +2,12 @@ name = "b_features"
 description = "Phase 2: Screen"
 depends_on = ["a_ingest"]
 inputs = ["../a_ingest/outputs/cleaned_sequences.csv"]
-outputs = ["outputs/peptide_features.csv"]
+# Update your outputs line to include the HTML
+outputs = ["outputs/peptide_features.csv", "outputs/screening_report.html"]
 [container]
 image = "python:3.11-slim"
 [scripts]
 pre = "pre_run.sh"
 run = "run.sh"
+[storage]
+outputs = "outputs"

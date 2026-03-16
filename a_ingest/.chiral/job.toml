@@ -6,3 +6,5 @@ image = "python:3.11-slim"
 [scripts]
 pre = "pre_run.sh"
 run = "run.sh"
+[storage]
+outputs = "outputs"
