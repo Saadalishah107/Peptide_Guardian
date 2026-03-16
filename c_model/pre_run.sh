@@ -1,2 +1,3 @@
 #!/bin/bash
-pip install --target=/tmp/packages pandas scikit-learn joblib
+# Pre-installed in chiral-guardian:v1
+echo "🚀 Environment ready."

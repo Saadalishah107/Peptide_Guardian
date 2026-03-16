@@ -1,19 +1,12 @@
 name = "d_prediction"
-description = "Phase 4: Lead Discovery & Guardian Scoring"
-depends_on = ["c_model"]
-inputs = [
-    "../b_features/outputs/peptide_features.csv",
-    "../c_model/outputs/peptide_guardian_model.pkl",
-    "../c_model/outputs/label_encoder.pkl"
-]
-outputs = ["outputs/guardian_leads.csv", "outputs/final_discovery_report.html"]
+description = "Phase 4: Lead Discovery"
+depends_on = ["b_features", "c_model"]
+# It needs the features from B and the model from C
+inputs = ["peptide_features.csv", "peptide_guardian_model.pkl", "label_encoder.pkl"] 
+outputs = ["results/guardian_leads.csv", "results/final_discovery_report.html"]
 
 [container]
-image = "python:3.11-slim"
+image = "chiral-guardian:v1"
 
 [scripts]
-pre = "pre_run.sh"
 run = "run.sh"
-
-[storage]
-outputs = "outputs"

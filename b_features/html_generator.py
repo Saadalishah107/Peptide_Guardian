@@ -1,17 +1,25 @@
 import pandas as pd
 import os
 
-def generate_screening_report(csv_input="outputs/peptide_features.csv", output_html="outputs/screening_report.html"):
+def generate_screening_report(csv_input="results/peptide_features.csv", output_html="results/screening_report.html"):
+    os.makedirs("results", exist_ok=True)
+    
+    if not os.path.exists(csv_input):
+        print(f"Error: {csv_input} not found.")
+        return
+
     df = pd.read_csv(csv_input)
     
-    # Feature 1: Top 5 Leads
+    # Identify top 5 cyclizable leads based on charge and hydrophobicity
     top_leads = df[df['Cyclizable'] == 1].copy()
     top_leads['score'] = top_leads['Net_Charge_pH7.4'] - abs(top_leads['Hydrophobicity_GRAVY'])
     top_leads = top_leads.sort_values(by='score', ascending=False).head(5)
     
-    table_rows = "".join([f"<tr><td>{r['Peptide_ID']}</td><td>{r['MW']}</td><td>{r['Hydrophobicity_GRAVY']}</td><td>{r['Net_Charge_pH7.4']}</td><td>{r['Label']}</td></tr>" for _, r in top_leads.iterrows()])
+    table_rows = "".join([
+        f"<tr><td>{r['Peptide_ID']}</td><td>{r['MW']}</td><td>{r['Hydrophobicity_GRAVY']}</td><td>{r['Net_Charge_pH7.4']}</td><td>{r['Label']}</td></tr>" 
+        for _, r in top_leads.iterrows()
+    ])
 
-    # Feature 2: Color mapping for Multi-class
     color_map = {"Antibacterial": "#3498db", "Antiviral": "#e74c3c", "Antifungal": "#f1c40f", "Non-AMP": "#bdc3c7"}
     df['Color'] = df['Label'].map(color_map)
 
@@ -28,4 +36,8 @@ def generate_screening_report(csv_input="outputs/peptide_features.csv", output_h
     Plotly.newPlot('pie', [{{values:{df['Label'].value_counts().tolist()}, labels:{df['Label'].value_counts().index.tolist()}, type:'pie'}}], {{title:'Functional Diversity'}});
     </script></body></html>
     """
-    with open(output_html, "w") as f: f.write(html_content)
+    
+    with open(output_html, "w") as f: 
+        f.write(html_content)
+    
+    print(f"Visual report saved to {output_html}")

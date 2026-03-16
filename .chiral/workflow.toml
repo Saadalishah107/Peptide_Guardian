@@ -1,10 +1,7 @@
-[workflow]
 name = "silva-test"
-
-[workspace]
-nodes = ["a_ingest", "b_features", "c_model", "d_prediction"]
+description = "Peptide Guardian pipeline" 
 
 [dependencies]
-"b_features" = ["a_ingest"]
-"c_model" = ["b_features"]
-"d_prediction" = ["c_model"]
+b_features = ["a_ingest"]
+c_model = ["b_features"]
+d_prediction = ["b_features", "c_model"]

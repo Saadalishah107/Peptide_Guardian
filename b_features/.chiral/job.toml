@@ -1,12 +1,13 @@
 name = "b_features"
 description = "Phase 2: Screen"
-depends_on = ["a_ingest"]
-inputs = ["../a_ingest/outputs/cleaned_sequences.csv"]
-outputs = ["outputs/peptide_features.csv", "outputs/screening_report.html"]
+# Use the folder name of Node 1
+depends_on = ["a_ingest"] 
+# Silva looks for this specific file inside the 'a_ingest' results
+inputs = ["cleaned_sequences.csv"] 
+outputs = ["results/peptide_features.csv", "results/screening_report.html"]
+
 [container]
-image = "python:3.11-slim"
+image = "chiral-guardian:v1"
+
 [scripts]
-pre = "pre_run.sh"
 run = "run.sh"
-[storage]
-outputs = "outputs"

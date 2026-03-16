@@ -1,3 +1,3 @@
 #!/bin/bash
-# Install dependencies for inference and reporting
-pip install --target=/tmp/packages pandas biopython joblib scikit-learn
+# Pre-installed in chiral-guardian:v1
+echo "🚀 Environment ready."

@@ -1,70 +1,78 @@
 import pandas as pd
 import joblib
+import os
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
 from sklearn.preprocessing import LabelEncoder
 
+def find_file(filename, search_path=".."):
+    for root, dirs, files in os.walk(search_path):
+        if filename in files:
+            return os.path.join(root, filename)
+    return None
+
 def run_node():
-    # 1. Setup Paths
-    INPUT = Path("../b_features/outputs/peptide_features.csv")
-    OUT_DIR = Path("outputs")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = Path("results")
+    out_dir.mkdir(parents=True, exist_ok=True)
     
-    MODEL_PATH = OUT_DIR / "peptide_guardian_model.pkl"
-    ENCODER_PATH = OUT_DIR / "label_encoder.pkl"
+    model_path = out_dir / "peptide_guardian_model.pkl"
+    encoder_path = out_dir / "label_encoder.pkl"
 
-    # 2. Safety Check: Wait for Node 2
-    if not INPUT.exists():
-        print(f"🛑 ERROR: Required input {INPUT} not found. Ensure Node 2 has finished.")
-        return
-
-    df = pd.read_csv(INPUT)
-
-    # 3. THE TOGGLE: Production vs Training
-    if (df['Label'] == "Unknown").all():
-        if MODEL_PATH.exists():
-            print("🤖 PRODUCTION MODE: Existing model found. Bypassing training to use pre-trained brain.")
-            return # Exit Node 3 successfully; Node 4 will take it from here.
+    input_path = Path("inputs/peptide_features.csv")
+    if not input_path.exists():
+        found = find_file("peptide_features.csv")
+        if found:
+            input_path = Path(found)
         else:
-            print("🛑 ERROR: No pre-trained model found. You must run in Training Mode (no input.fasta) first!")
+            print(f"Error: Required input {input_path} not found.")
             return
 
-    # 4. TRAINING LOGIC (Only runs if data has real labels)
-    print("🧠 TRAINING MODE: Building the Peptide-Guardian Ensemble...")
+    print(f"Loading features from: {input_path}")
+    df = pd.read_csv(input_path)
+
+    if (df['Label'] == "Unknown").all():
+        if model_path.exists():
+            print("Production Mode: Using existing pre-trained model.")
+            return 
+        else:
+            print("Error: No pre-trained model found in results.")
+            return
+
+    print("Training Mode: Building the Peptide-Guardian Ensemble...")
     
     le = LabelEncoder()
-    # Features used for training
-    X = df[['MW', 'pI', 'Hydrophobicity_GRAVY', 'Net_Charge_pH7.4', 'Cys_Count']]
+    feature_cols = ['MW', 'pI', 'Hydrophobicity_GRAVY', 'Net_Charge_pH7.4', 'Cys_Count']
+    X = df[feature_cols]
     y = le.fit_transform(df['Label'])
     
-    # BIAS FIX: Stratify ensures each category is represented equally in the test set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=42
+    )
     
-    # OVERFITTING FIX: max_depth=10 prevents the trees from "memorizing" individual sequences
     rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
     et = ExtraTreesClassifier(n_estimators=200, max_depth=10, random_state=42)
     ensemble = VotingClassifier(estimators=[('rf', rf), ('et', et)], voting='soft')
     
     ensemble.fit(X_train, y_train)
 
-    # 5. Save the Intelligence
-    joblib.dump(ensemble, MODEL_PATH)
-    joblib.dump(le, ENCODER_PATH)
+    joblib.dump(ensemble, model_path)
+    joblib.dump(le, encoder_path)
     
-    # 6. Generate the Performance Report
-    from html_generator import generate_model_report
-    metrics = {
-        "accuracy": ensemble.score(X_test, y_test),
-        "auc": 0.98,
-        "feature_importance": ensemble.named_estimators_['rf'].feature_importances_.tolist(),
-        "feature_names": ['MW', 'pI', 'GRAVY', 'Charge', 'Cys_Count'],
-        "class_counts": df['Label'].value_counts().tolist(),
-        "class_names": df['Label'].value_counts().index.tolist()
-    }
-    generate_model_report(metrics, output_html=OUT_DIR / "classification_report.html")
-    
-    print(f"📊 Training Complete. Accuracy: {metrics['accuracy']:.2%}")
+    try:
+        from html_generator import generate_model_report
+        metrics = {
+            "accuracy": ensemble.score(X_test, y_test),
+            "auc": 0.98,
+            "feature_importance": ensemble.named_estimators_['rf'].feature_importances_.tolist(),
+            "feature_names": ['MW', 'pI', 'GRAVY', 'Charge', 'Cys_Count'],
+            "class_counts": df['Label'].value_counts().tolist(),
+            "class_names": df['Label'].value_counts().index.tolist()
+        }
+        generate_model_report(metrics, str(out_dir / "classification_report.html"))
+        print(f"Training Complete. Accuracy: {metrics['accuracy']:.2%}")
+    except Exception as e:
+        print(f"Warning: Report generation skipped: {e}")
 
 if __name__ == "__main__":
     run_node()

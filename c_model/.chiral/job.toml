@@ -1,15 +1,15 @@
 name = "c_model"
 description = "Phase 3: Ensemble Classification Engine"
 depends_on = ["b_features"]
-inputs = ["../b_features/outputs/peptide_features.csv"]
-outputs = ["outputs/model_results.csv", "outputs/classification_report.html"]
+inputs = ["peptide_features.csv"] 
+outputs = [
+    "results/peptide_guardian_model.pkl", 
+    "results/label_encoder.pkl", 
+    "results/classification_report.html"
+]
 
 [container]
-image = "python:3.11-slim"
+image = "chiral-guardian:v1"
 
 [scripts]
-pre = "pre_run.sh"
 run = "run.sh"
-
-[storage]
-outputs = "outputs"
