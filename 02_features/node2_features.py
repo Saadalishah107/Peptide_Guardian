@@ -5,7 +5,7 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 def run_node():
     # Look directly into Node 1's output folder
     # THIS IS THE SILVA STANDARD PATH
-    INPUT_FILE = "/workspace/01_ingest/outputs/cleaned_sequences.csv"
+    INPUT_FILE = Path("../01_ingest/outputs/cleaned_sequences.csv")
     OUT_DIR = Path("/workspace/02_features/outputs")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
