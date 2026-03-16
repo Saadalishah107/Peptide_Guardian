@@ -1,9 +1,9 @@
 import json
 import os
 
-def generate_model_report(metrics, output_html="results/classification_report.html"):
-    # Ensure results directory exists
-    os.makedirs("results", exist_ok=True)
+def generate_model_report(metrics, output_html="outputs/classification_report.html"):
+    # Silva Rule: Mandatory output directory for platform artifact collection
+    os.makedirs("outputs", exist_ok=True)
     
     html_content = f"""
     <!DOCTYPE html>
@@ -63,9 +63,10 @@ def generate_model_report(metrics, output_html="results/classification_report.ht
             }}];
 
             Plotly.newPlot('feature-importance', importanceData, {{
-                title: 'Scientific Drivers',
+                title: 'Scientific Drivers (Feature Importance)',
                 yaxis: {{ title: 'Importance Score' }},
-                xaxis: {{ title: 'Feature' }}
+                xaxis: {{ title: 'Feature' }},
+                margin: {{ t: 50, b: 50 }}
             }});
 
             const classData = [{{
@@ -77,7 +78,8 @@ def generate_model_report(metrics, output_html="results/classification_report.ht
             }}];
 
             Plotly.newPlot('prediction-confidence', classData, {{
-                title: 'Training Set Balance'
+                title: 'Training Set Class Distribution',
+                margin: {{ t: 50, b: 50 }}
             }});
         </script>
     </body>
@@ -87,4 +89,4 @@ def generate_model_report(metrics, output_html="results/classification_report.ht
     with open(output_html, "w") as f:
         f.write(html_content)
     
-    print(f"Model performance report generated: {output_html}")
+    print(f"Success: Model performance report generated at {output_html}")

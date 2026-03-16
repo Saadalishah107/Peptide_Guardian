@@ -1,27 +1,49 @@
 import pandas as pd
 import os
+import json
 from pathlib import Path
 
+def load_params():
+    """Silva Guide Step 5.5: Load global parameters to find input filename."""
+    global_params = {}
+    # Silva mounts global_params.json into the inputs folder of the node
+    params_path = Path("inputs/global_params.json")
+    if params_path.exists():
+        with open(params_path) as f:
+            global_params = json.load(f)
+    return global_params
+
 def run_node():
-    # Setup directory
-    out_dir = Path("results")
+    # Silva Rule: Mandatory output directory
+    out_dir = Path("outputs")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Input file from local directory
-    input_file = "input.fasta"
+    # Load parameters to see which file the user wants to process
+    global_params = load_params()
     
-    if not os.path.exists(input_file):
-        print(f"Error: {input_file} not found.")
+    # Logic: 1. Check global_params, 2. Check ./inputs/, 3. Fallback to root
+    filename = global_params.get("input_file", "input.fasta")
+    
+    # Priority path for Silva execution
+    input_path = Path("inputs") / filename
+    
+    # Local fallback for manual testing
+    if not input_path.exists():
+        input_path = Path(filename)
+
+    if not input_path.exists():
+        print(f"Error: Input file '{filename}' not found in ./inputs/ or job root.")
         return
 
-    print(f"Processing {input_file}...")
+    print(f"Processing sequence data from: {input_path}")
     
     sequences = []
     current_seq = ""
     
-    with open(input_file, "r") as f:
+    with open(input_path, "r") as f:
         for line in f:
             line = line.strip()
+            if not line: continue
             if line.startswith(">"):
                 if current_seq:
                     sequences.append(current_seq)
@@ -31,14 +53,16 @@ def run_node():
         if current_seq:
             sequences.append(current_seq)
 
-    # Simple cleaning and saving
+    # Structure data for the Peptide-Guardian pipeline
     df = pd.DataFrame({"Sequence": sequences})
+    df.insert(0, 'Peptide_ID', [f"P-{i+1:04d}" for i in range(len(df))])
     df['Sequence'] = df['Sequence'].str.upper().str.replace(r'[^A-Z]', '', regex=True)
     
-    output_path = out_dir / "cleaned_sequences.csv"
-    df.to_csv(output_path, index=False)
+    # Final export to the standard collection folder
+    output_file = out_dir / "cleaned_sequences.csv"
+    df.to_csv(output_file, index=False)
     
-    print(f"Success: {len(df)} sequences saved to {output_path}")
+    print(f"Success: {len(df)} sequences staged for feature engineering.")
 
 if __name__ == "__main__":
     run_node()

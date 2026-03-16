@@ -1,12 +1,12 @@
 name = "d_prediction"
-description = "Phase 4: Lead Discovery"
+description = "Applies the trained ensemble engine to score candidate sequences and identifies top leads for in-vitro validation."
 depends_on = ["b_features", "c_model"]
-# It needs the features from B and the model from C
-inputs = ["peptide_features.csv", "peptide_guardian_model.pkl", "label_encoder.pkl"] 
-outputs = ["results/guardian_leads.csv", "results/final_discovery_report.html"]
+inputs = ["peptide_features.csv", "peptide_guardian_model.pkl", "label_encoder.pkl"]
+outputs = ["guardian_leads.csv", "final_discovery_report.html"]
 
 [container]
 image = "chiral-guardian:v1"
 
 [scripts]
+pre = "pre_run.sh"
 run = "run.sh"

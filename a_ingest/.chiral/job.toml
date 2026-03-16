@@ -1,7 +1,6 @@
 name = "a_ingest"
-description = "Phase 1: Harvest"
-# Relative path inside the container
-outputs = ["results/cleaned_sequences.csv"]
+description = "Validates input FASTA files and cleans protein sequences for downstream biophysical analysis."
+outputs = ["cleaned_sequences.csv"]
 
 [container]
 image = "chiral-guardian:v1"
@@ -9,4 +8,3 @@ image = "chiral-guardian:v1"
 [scripts]
 pre = "pre_run.sh"
 run = "run.sh"
-

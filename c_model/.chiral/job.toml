@@ -1,15 +1,12 @@
 name = "c_model"
-description = "Phase 3: Ensemble Classification Engine"
+description = "Trains a Random Forest/Extra Trees ensemble to classify peptides based on biophysical signatures."
 depends_on = ["b_features"]
-inputs = ["peptide_features.csv"] 
-outputs = [
-    "results/peptide_guardian_model.pkl", 
-    "results/label_encoder.pkl", 
-    "results/classification_report.html"
-]
+inputs = ["peptide_features.csv"]
+outputs = ["peptide_guardian_model.pkl", "label_encoder.pkl", "classification_report.html"]
 
 [container]
 image = "chiral-guardian:v1"
 
 [scripts]
+pre = "pre_run.sh"
 run = "run.sh"

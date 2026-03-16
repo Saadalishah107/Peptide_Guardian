@@ -1,16 +1,17 @@
 import os
 
-def generate_final_report(df, output_path="results/final_discovery_report.html"):
-    # Ensure results directory exists
+def generate_final_report(df, output_path="outputs/final_discovery_report.html"):
+    # Silva Rule: Mandatory directory creation within the isolated container
     output_dir = os.path.dirname(output_path)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
-    # Filter and sort leads
+    # Filtering logic: Only display high-confidence hits, excluding non-active sequences
     leads = df[df['Predicted_Type'] != "Non-AMP"].sort_values(by="Confidence", ascending=False)
     
     table_rows = ""
     for _, row in leads.head(15).iterrows():
+        # Green for Cyclizable leads (high stability), Blue for standard
         status_color = "#27ae60" if row['Cyclizable'] == 1 else "#2980b9"
         table_rows += f"""
         <tr>
@@ -32,7 +33,8 @@ def generate_final_report(df, output_path="results/final_discovery_report.html")
             body {{ font-family: sans-serif; margin: 40px; background: #f4f7f6; color: #333; }}
             .card {{ background: white; padding: 40px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); max-width: 1100px; margin: auto; }}
             .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #3498db; padding-bottom: 20px; }}
-            .btn-export {{ background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }}
+            .btn-export {{ background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }}
+            .btn-export:hover {{ background: #219150; }}
             table {{ width: 100%; border-collapse: collapse; margin-top: 30px; }}
             th {{ background: #f8f9fa; color: #7f8c8d; padding: 15px; text-align: left; text-transform: uppercase; font-size: 0.85em; }}
             td {{ padding: 15px; border-bottom: 1px solid #eee; }}
@@ -70,6 +72,7 @@ def generate_final_report(df, output_path="results/final_discovery_report.html")
         </div>
 
         <script>
+            // Client-side JS allows the user to export the Silva-generated data locally
             function exportToExcel() {{
                 var table = document.getElementById("leads-table");
                 var wb = XLSX.utils.table_to_book(table, {{sheet: "Guardian Leads"}});
@@ -83,4 +86,4 @@ def generate_final_report(df, output_path="results/final_discovery_report.html")
     with open(output_path, "w") as f:
         f.write(html_content)
     
-    print(f"Final report successfully written to {output_path}")
+    print(f"Success: Final discovery report generated at {output_path}")
