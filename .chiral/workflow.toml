@@ -1,5 +1,9 @@
 [workflow]
-name = "silva_workflow"
+name = "silva-test"
 
 [workspace]
-nodes = ["01_ingest"]
+nodes = ["01_ingest", "02_features"]
+
+# This is the master lock that forces Node 1 to go first
+[dependencies]
+"02_features" = ["01_ingest"]

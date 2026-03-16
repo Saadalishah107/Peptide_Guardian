@@ -1,13 +1,10 @@
 name = "01_ingest"
 description = "Ingest and clean FASTA sequences"
-outputs = ["outputs/cleaned_sequences.csv", "outputs/dataset_summary.json"]
+inputs = ["sample_peptides.fasta"]
+outputs = ["outputs/cleaned_sequences.csv"]
 
 [container]
 image = "python:3.11-slim"
 
 [scripts]
 run = "run.sh"
-
-[storage]
-# This tells Silva to preserve this folder after the container stops
-outputs = "outputs"
