@@ -2,8 +2,7 @@
 name = "silva-test"
 
 [workspace]
-nodes = ["01_ingest", "02_features"]
+nodes = ["a_ingest", "b_features"]
 
-# This is the master lock that forces Node 1 to go first
 [dependencies]
-"02_features" = ["01_ingest"]
+"b_features" = ["a_ingest"]

@@ -1,0 +1,10 @@
+name = "a_ingest"
+description = "Phase 1: Harvest"
+outputs = ["outputs/cleaned_sequences.csv"]
+[container]
+image = "python:3.11-slim"
+[scripts]
+pre = "pre_run.sh"
+run = "run.sh"
+[storage]
+outputs = "outputs"

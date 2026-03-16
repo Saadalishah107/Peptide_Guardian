@@ -1,0 +1,12 @@
+name = "b_features"
+description = "Phase 2: Screen"
+depends_on = ["a_ingest"]
+inputs = ["/workspace/a_ingest/outputs/cleaned_sequences.csv"]
+outputs = ["outputs/peptide_features.csv"]
+[container]
+image = "python:3.11-slim"
+[scripts]
+pre = "pre_run.sh"
+run = "run.sh"
+[storage]
+outputs = "outputs"
