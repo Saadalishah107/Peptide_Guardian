@@ -14,10 +14,6 @@ def load_params():
     return global_params
 
 def run_node():
-    # Silva Rule: Mandatory output directory
-    out_dir = Path("outputs")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     # Load parameters to see which file the user wants to process
     global_params = load_params()
     
@@ -58,8 +54,8 @@ def run_node():
     df.insert(0, 'Peptide_ID', [f"P-{i+1:04d}" for i in range(len(df))])
     df['Sequence'] = df['Sequence'].str.upper().str.replace(r'[^A-Z]', '', regex=True)
     
-    # Final export to the standard collection folder
-    output_file = out_dir / "cleaned_sequences.csv"
+    #  CRITICAL FIX: Save directly to the root directory (no outputs/ folder)
+    output_file = "cleaned_sequences.csv"
     df.to_csv(output_file, index=False)
     
     print(f"Success: {len(df)} sequences staged for feature engineering.")

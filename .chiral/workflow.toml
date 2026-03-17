@@ -1,7 +1,17 @@
 name = "silva-test"
 description = "Peptide Guardian pipeline" 
 
+nodes = ["a_ingest", "b_features", "c_model", "d_prediction"]
+
+[publish]
+output_dir = "outputs"
+
 [dependencies]
+
 b_features = ["a_ingest"]
+
 c_model = ["b_features"]
+
 d_prediction = ["b_features", "c_model"]
+
+harvest_from = ["a_ingest", "b_features", "c_model", "d_prediction"]

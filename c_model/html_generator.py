@@ -1,9 +1,10 @@
 import json
 import os
 
-def generate_model_report(metrics, output_html="outputs/classification_report.html"):
-    # Silva Rule: Mandatory output directory for platform artifact collection
-    os.makedirs("outputs", exist_ok=True)
+# CRITICAL FIX: Changed default path to the root directory
+def generate_model_report(metrics, output_html="classification_report.html"):
+    
+    # CRITICAL FIX: Removed `os.makedirs("outputs", exist_ok=True)` entirely
     
     html_content = f"""
     <!DOCTYPE html>

@@ -1,65 +1,64 @@
 import pandas as pd
-import os
+from pathlib import Path
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
-def generate_screening_report(csv_input="outputs/peptide_features.csv", output_html="outputs/screening_report.html"):
-    # Silva Rule: Ensure the standard collection folder exists
-    os.makedirs("outputs", exist_ok=True)
+def run_node():
+    # Silva Rule: Inputs are staged directly in ./inputs/ based on your @job.toml
+    input_path = Path("inputs/cleaned_sequences.csv")
     
-    if not os.path.exists(csv_input):
-        print(f"Error: {csv_input} not found. Cannot generate report.")
+    # Local fallback for manual testing outside of Docker
+    if not input_path.exists():
+        input_path = Path("cleaned_sequences.csv")
+
+    if not input_path.exists():
+        print(f"Error: Required input {input_path} not found.")
         return
 
-    df = pd.read_csv(csv_input)
+    print(f"Loading relayed sequences from: {input_path}")
+    df = pd.read_csv(input_path)
+    results = []
     
-    # Identify top 5 cyclizable leads based on charge and hydrophobicity
-    top_leads = df[df['Cyclizable'] == 1].copy()
-    top_leads['score'] = top_leads['Net_Charge_pH7.4'] - abs(top_leads['Hydrophobicity_GRAVY'])
-    top_leads = top_leads.sort_values(by='score', ascending=False).head(5)
+    print(f"Calculating biophysical features for {len(df)} sequences...")
     
-    table_rows = "".join([
-        f"<tr><td>{r['Peptide_ID']}</td><td>{r['MW']}</td><td>{r['Hydrophobicity_GRAVY']}</td><td>{r['Net_Charge_pH7.4']}</td><td>{r['Label']}</td></tr>" 
-        for _, r in top_leads.iterrows()
-    ])
+    for _, row in df.iterrows():
+        try:
+            seq_str = str(row['Sequence'])
+            pa = ProteinAnalysis(seq_str)
+            cys = seq_str.count('C')
+            results.append({
+                "Peptide_ID": row.get('Peptide_ID', 'Unknown'),
+                "Sequence": seq_str, # Keep sequence for Node 4 report
+                "MW": round(pa.molecular_weight(), 2),
+                "pI": round(pa.isoelectric_point(), 2),
+                "Hydrophobicity_GRAVY": round(pa.gravy(), 3),
+                "Net_Charge_pH7.4": round(pa.charge_at_pH(7.4), 2),
+                "Cys_Count": cys,
+                "Cyclizable": 1 if cys >= 2 else 0,
+                "Label": row.get('Label', 'Non-AMP')
+            })
+        except Exception:
+            # Skip invalid sequences silently to keep logs clean
+            continue
+    
+    #  CRITICAL FIX: Save directly to the root directory (no outputs/ folder)
+    feature_file = "peptide_features.csv"
+    pd.DataFrame(results).to_csv(feature_file, index=False)
+    
+    print(f"Success: Features staged at {feature_file}")
+    
+    # Visual reporting
+    try:
+        from html_generator import generate_screening_report
+        # ✨ CRITICAL FIX: Pass root paths instead of outputs/
+        generate_screening_report(
+            csv_input=feature_file,
+            output_html="screening_report.html"
+        )
+        print("Success: Screening report generated in root directory")
+    except ImportError:
+        print("Warning: html_generator.py not found, skipping HTML report.")
+    except Exception as e:
+        print(f"Warning: HTML generator failed: {e}")
 
-    # Mapping colors for the Plotly dashboard
-    color_map = {"Antibacterial": "#3498db", "Antiviral": "#e74c3c", "Antifungal": "#f1c40f", "Non-AMP": "#bdc3c7"}
-    df['Color'] = df['Label'].apply(lambda x: color_map.get(x, "#bdc3c7"))
-
-    html_content = f"""
-    <!DOCTYPE html><html><head><script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <style>
-        body{{font-family:sans-serif; margin:30px; background:#f4f7f6;}} 
-        .box{{background:white; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}} 
-        table{{width:100%; border-collapse:collapse; margin-top:20px;}} 
-        th{{background:#3498db; color:white; padding:10px; text-align:left;}} 
-        td{{padding:10px; border-bottom:1px solid #ddd;}}
-    </style></head>
-    <body><div class="box"><h1>Peptide-Guardian Screening</h1>
-    <div id="scatter" style="height:500px;"></div>
-    <div id="pie" style="height:400px;"></div>
-    <h3>Top Balanced Leads (Cyclizable)</h3>
-    <table><thead><tr><th>ID</th><th>MW</th><th>GRAVY</th><th>Charge</th><th>Type</th></tr></thead><tbody>{table_rows}</tbody></table>
-    </div><script>
-    Plotly.newPlot('scatter', [{{
-        x: {df['Net_Charge_pH7.4'].tolist()}, 
-        y: {df['Hydrophobicity_GRAVY'].tolist()}, 
-        mode: 'markers', 
-        marker: {{color: {df['Color'].tolist()}, size: 10}} 
-    }}], {{
-        title: 'ADMET Landscape (Charge vs Hydrophobicity)', 
-        xaxis: {{title: 'Net Charge (pH 7.4)'}}, 
-        yaxis: {{title: 'GRAVY (Hydrophobicity)'}} 
-    }});
-    
-    Plotly.newPlot('pie', [{{
-        values: {df['Label'].value_counts().tolist()}, 
-        labels: {df['Label'].value_counts().index.tolist()}, 
-        type: 'pie'
-    }}], {{title: 'Functional Diversity Distribution'}});
-    </script></body></html>
-    """
-    
-    with open(output_html, "w") as f: 
-        f.write(html_content)
-    
-    print(f"Success: Visual report generated at {output_html}")
+if __name__ == "__main__":
+    run_node()

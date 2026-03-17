@@ -1,15 +1,7 @@
 import pandas as pd
 import joblib
-import os
 import json
 from pathlib import Path
-
-def find_file(filename, search_path=".."):
-    """Guide Step 9: Robust file discovery fallback."""
-    for root, dirs, files in os.walk(search_path):
-        if filename in files:
-            return os.path.join(root, filename)
-    return None
 
 def load_params():
     """Load global parameters for dynamic filtering/thresholds."""
@@ -20,25 +12,17 @@ def load_params():
     return {}
 
 def run_node():
-    # Silva Rule: Standard outputs folder for final collection
-    out_dir = Path("outputs")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     # Silva Rule: All staged dependencies live in ./inputs/
     feat_path = Path("inputs/peptide_features.csv")
     model_path = Path("inputs/peptide_guardian_model.pkl")
     encoder_path = Path("inputs/label_encoder.pkl")
 
-    # Robust discovery for Silva distributed environments
-    paths = [feat_path, model_path, encoder_path]
-    for i, p in enumerate(paths):
-        if not p.exists():
-            found = find_file(p.name)
-            if found: paths[i] = Path(found)
+    # Local fallback for manual testing outside of Docker
+    if not feat_path.exists(): feat_path = Path("peptide_features.csv")
+    if not model_path.exists(): model_path = Path("peptide_guardian_model.pkl")
+    if not encoder_path.exists(): encoder_path = Path("label_encoder.pkl")
 
-    feat_path, model_path, encoder_path = paths
-
-    if not all(p.exists() for p in paths):
+    if not (feat_path.exists() and model_path.exists() and encoder_path.exists()):
         print("Error: Required artifacts (features or model) missing from ./inputs/")
         return
 
@@ -72,19 +56,22 @@ def run_node():
         df = df[df['Confidence'] >= threshold]
         print(f"Applied filtering: {len(df)} leads remaining (threshold > {threshold})")
 
-    # Final Export
-    lead_file = out_dir / "guardian_leads.csv"
+    #  CRITICAL FIX: Final Export directly to root directory
+    lead_file = "guardian_leads.csv"
     df.to_csv(lead_file, index=False)
 
     # Generate Final Platform Report
     try:
         from html_generator import generate_final_report
-        generate_final_report(df, str(out_dir / "final_discovery_report.html"))
+        # CRITICAL FIX: Pass root path instead of outputs/
+        generate_final_report(df, "final_discovery_report.html")
         print("Success: Final discovery report generated.")
+    except ImportError:
+        print("Warning: html_generator.py not found, skipping HTML report.")
     except Exception as e:
         print(f"Warning: Discovery visualization failed: {e}")
 
-    print(f"Success: Workflow complete. Final leads saved to {out_dir}")
+    print("Success: Workflow complete. Final leads saved to root directory.")
 
 if __name__ == "__main__":
     run_node()

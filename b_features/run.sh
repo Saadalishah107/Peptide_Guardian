@@ -1,6 +1,4 @@
 #!/bin/bash
 set -e
  
-
-
-python3 node2_features.py
+python3 -u node2_features.py

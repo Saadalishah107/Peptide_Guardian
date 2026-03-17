@@ -1,7 +1,8 @@
 import os
 
-def generate_final_report(df, output_path="outputs/final_discovery_report.html"):
-    # Silva Rule: Mandatory directory creation within the isolated container
+# CRITICAL FIX: Changed default path to the root directory
+def generate_final_report(df, output_path="final_discovery_report.html"):
+    # This safely skips making a directory if output_path is just a filename
     output_dir = os.path.dirname(output_path)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)

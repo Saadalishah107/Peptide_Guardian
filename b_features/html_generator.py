@@ -1,9 +1,10 @@
 import pandas as pd
 import os
 
-def generate_screening_report(csv_input="outputs/peptide_features.csv", output_html="outputs/screening_report.html"):
-    # Silva Rule: Ensure the standard collection folder exists
-    os.makedirs("outputs", exist_ok=True)
+#  CRITICAL FIX: Changed default paths to the root directory
+def generate_screening_report(csv_input="peptide_features.csv", output_html="screening_report.html"):
+    
+    #  CRITICAL FIX: Removed `os.makedirs("outputs", exist_ok=True)` entirely
     
     if not os.path.exists(csv_input):
         print(f"Error: {csv_input} not found.")

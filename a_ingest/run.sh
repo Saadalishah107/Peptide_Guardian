@@ -1,6 +1,4 @@
 #!/bin/bash
 set -e
 
-
-
-python3 node1_ingest.py
+python3 -u node1_ingest.py

@@ -1,45 +1,33 @@
 import pandas as pd
 import joblib
-import os
-import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
 from sklearn.preprocessing import LabelEncoder
 
-def find_file(filename, search_path=".."):
-    """Guide Step 9: Robust file discovery fallback."""
-    for root, dirs, files in os.walk(search_path):
-        if filename in files:
-            return os.path.join(root, filename)
-    return None
-
 def run_node():
-    # Silva Rule: Standard outputs directory for model artifacts
-    out_dir = Path("outputs")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    
-    model_path = out_dir / "peptide_guardian_model.pkl"
-    encoder_path = out_dir / "label_encoder.pkl"
+    #  CRITICAL FIX: Save models directly to the root directory
+    model_path = "peptide_guardian_model.pkl"
+    encoder_path = "label_encoder.pkl"
 
     # Silva Rule: Inputs from Node 2 (b_features) are relayed to ./inputs/
     input_path = Path("inputs/peptide_features.csv")
     
+    # Local fallback for manual testing
     if not input_path.exists():
-        found = find_file("peptide_features.csv")
-        if found:
-            input_path = Path(found)
-        else:
-            print(f"Error: Required features {input_path} not found.")
-            return
+        input_path = Path("peptide_features.csv")
+        
+    if not input_path.exists():
+        print(f"Error: Required features {input_path} not found.")
+        return
 
     print(f"Loading feature matrix from: {input_path}")
     df = pd.read_csv(input_path)
 
     # Logic to distinguish between Training and Production modes
     if (df['Label'] == "Unknown").all():
-        if model_path.exists():
-            print("Production Mode: Model detected in outputs.")
+        if Path(model_path).exists():
+            print("Production Mode: Model detected in root directory.")
             return 
         else:
             print("Error: Production mode requested but model artifact missing.")
@@ -64,11 +52,12 @@ def run_node():
     
     ensemble.fit(X_train, y_train)
 
-    # Save artifacts for relay to Node 4 (d_prediction)
+    # Save artifacts directly to the root for relay to Node 4
     joblib.dump(ensemble, model_path)
     joblib.dump(le, encoder_path)
+    print("Success: Model artifacts saved to root directory.")
     
-    # Silva Rule: All metrics should be exported for platform visualization
+    # Visual reporting
     try:
         from html_generator import generate_model_report
         metrics = {
@@ -79,9 +68,11 @@ def run_node():
             "class_counts": df['Label'].value_counts().tolist(),
             "class_names": le.classes_.tolist()
         }
-        # Explicitly writing to the standard outputs folder
-        generate_model_report(metrics, str(out_dir / "classification_report.html"))
+        #  CRITICAL FIX: Pass root path instead of outputs/
+        generate_model_report(metrics, "classification_report.html")
         print(f"Success: Ensemble training complete. Accuracy: {metrics['accuracy']:.2%}")
+    except ImportError:
+        print("Warning: html_generator.py not found, skipping HTML report.")
     except Exception as e:
         print(f"Warning: Intelligence report failed: {e}")
 
