@@ -1,77 +1,126 @@
 # Peptide_Guardian: High-Fidelity Peptide Discovery Pipeline
 
 ## Project Overview
-**Peptide_Guardian** is an automated, containerized bioinformatics suite engineered for the high-throughput characterization and discovery of bioactive peptides. Previously developed under the working title **silva-test**, the pipeline has been promoted to a production-ready framework optimized for the **Silva March 2026 Engine**. It utilizes a four-node decoupled architecture to transform raw FASTA sequences into actionable, lab-ready lead lists with high-confidence scoring.
+**Peptide_Guardian** is an industrial-grade, containerized bioinformatics suite engineered for the high-throughput characterization, biophysical profiling, and discovery of bioactive peptides. 
+
+Originally developed under the working title **silva-test**, this framework has been promoted to a production-ready discovery engine optimized for the **Silva March 2026 Orchestration Standard**. The pipeline utilizes a four-node Directed Acyclic Graph (DAG) architecture to transform raw, uncharacterized FASTA sequences into a prioritized, multi-parameter-scored lead list ready for in-vitro validation.
 
 ---
 
-## System Architecture and Infrastructure
+## System Architecture and Data Relay Logic
 
 ### Orchestration Environment
-The pipeline is orchestrated as a **Directed Acyclic Graph (DAG)**, ensuring data hermeticity and strict dependency management. Each node is isolated within its own container environment but linked via the Silva relay system, where outputs from one node are staged as inputs for the next.
+The pipeline is managed by the Silva Engine, which enforces strict data hermeticity. Each node operates within an isolated container environment. Data is passed between nodes via a "Relay System":
+1. **Staging**: The engine mounts the previous node's `outputs/` as the current node's `inputs/`.
+2. **Execution**: The node processes data and writes artifacts to its root directory.
+3. **Harvesting**: Upon successful exit code 0, the engine harvests all root artifacts and persists them in the global `outputs/` directory for downstream consumption.
 
-### Container Specification: `chiral-guardian:v1`
-The pipeline operates within a standardized Docker environment defined by the following specifications:
-* **Base Image:** `python:3.11-slim`
-* **System Dependencies:** `build-essential` (required for Scipy/Scikit-learn C-extensions).
-* **Python Stack:** `pandas`, `biopython` (ProtParam), `scikit-learn`, `joblib`, `plotly`, and `scipy`.
-* **Execution Protocol:** Every node utilizes a `pre_run.sh` for environment validation and a `run.sh` with unbuffered logging (`-u`) to provide real-time telemetry to the Silva TUI.
+### Computational Infrastructure: `chiral-guardian:v1`
+The pipeline is built upon a high-performance Docker image:
+* **Operating System**: `python:3.11-slim` for a minimal security attack surface.
+* **Build Tools**: `build-essential` included for compiling Scikit-learn and Scipy C-extensions.
+* **Core Libraries**: 
+    * **Biopython**: Specifically the `ProtParam` module for molecular weight and pI calculations.
+    * **Scikit-learn**: Powering the Soft-Voting Ensemble (Random Forest & Extra Trees).
+    * **Plotly**: Generating interactive, browser-based biophysical dashboards.
+    * **SheetJS**: Integrated into the final report for client-side Excel generation.
+    * **Pandas**: Optimized for large-scale peptide sequence matrices.
 
 ---
 
 ## Detailed Node Specifications
 
 ### Node 1: Data Ingestion (`a_ingest`)
-* **Primary Role:** Sequence Normalization and Sanitation.
-* **Inputs:** * `input_files/input.fasta`: Raw peptide sequences in FASTA format.
-    * `global_params.json`: Global configuration file specifying the target `input_file`.
-* **Processing Logic:** The node parses the FASTA file, sanitizes sequences by converting to uppercase and removing non-amino acid characters, and generates unique `Peptide_ID` tracking codes (format: `P-XXXX`).
-* **Outputs:** `cleaned_sequences.csv`.
+* **Objective**: Source normalization and sequence sanitation.
+* **Logic**: Utilizing `global_params.json`, the node locates the target FASTA. It implements a custom parser that:
+    * Sanitizes sequences by stripping non-amino acid characters and whitespace.
+    * Standardizes sequence case to Uppercase.
+    * Assigns a persistent `Peptide_ID` (format: `P-0001` to `P-XXXX`) to maintain traceability.
+* **Inputs**: `input_files/input.fasta`, `global_params.json`.
+* **Outputs**: `cleaned_sequences.csv`.
 
 ### Node 2: Biophysical Profiling (`b_features`)
-* **Primary Role:** Feature Engineering and ADMET Landscape Mapping.
-* **Inputs:** `cleaned_sequences.csv` (Relayed from Node 1).
-* **Processing Logic:** Extracts five primary biophysical descriptors:
-    1. **Molecular Weight (MW)**: Calculated in Daltons.
-    2. **Isoelectric Point (pI)**: Predicted pH at zero net charge.
-    3. **Hydrophobicity (GRAVY)**: Grand Average of Hydropathy score.
-    4. **Net Charge**: Calculated at physiological pH (7.4).
-    5. **Cys_Count**: Quantification of Cysteine residues for cyclization potential.
-* **Outputs:** `peptide_features.csv`, `screening_report.html`.
+* **Objective**: Feature Engineering and ADMET Landscape Mapping.
+* **Mathematical Descriptors**:
+    * **Isoelectric Point (pI)**: Predicted using the Bjellqvist method (pKa values determined at 25°C).
+    * **GRAVY (Grand Average of Hydropathy)**: Calculated based on the Kyte-Doolittle scale to assess solubility.
+    * **Net Charge**: Calculated at physiological pH (7.4) to determine cell-membrane interaction potential.
+    * **Molecular Weight (MW)**: Full-precision calculation based on monoisotopic mass.
+    * **Cyclizability Flag**: A logic-gate identifying sequences with a Cysteine count $\ge$ 2.
+* **Reporting**: Generates `screening_report.html`, featuring a 3D-interactive ADMET landscape using Plotly to visualize Charge vs. Hydrophobicity.
+* **Inputs**: `cleaned_sequences.csv`.
+* **Outputs**: `peptide_features.csv`, `screening_report.html`.
 
 ### Node 3: Ensemble Intelligence (`c_model`)
-* **Primary Role:** Machine Learning Classification.
-* **Inputs:** `peptide_features.csv` (Relayed from Node 2).
-* **Processing Logic:** Executes a **Soft-Voting Ensemble** combining `RandomForestClassifier` and `ExtraTreesClassifier` (200 estimators each). 
-* **Outputs:** `peptide_guardian_model.pkl`, `label_encoder.pkl`, `classification_report.html`.
+* **Objective**: Predictive Classification via Soft-Voting Ensemble Learning.
+* **Algorithm Architecture**: 
+    1. **Random Forest Classifier**: 200 estimators, `max_depth=10`, `random_state=42`. Focuses on robust decision boundaries.
+    2. **Extra Trees Classifier**: 200 estimators, `max_depth=10`, `random_state=42`. Adds randomization to reduce variance.
+    3. **Voting Mechanism**: Soft-voting combines predicted class probabilities of both models to increase classification confidence.
+* **Model Training**: Utilizes a stratified 80/20 train-test split to ensure class representation.
+* **Reporting**: Generates `classification_report.html` documenting Accuracy, AUC, and Feature Importance (Scientific Drivers).
+* **Inputs**: `peptide_features.csv`.
+* **Outputs**: `peptide_guardian_model.pkl`, `label_encoder.pkl`, `classification_report.html`.
 
 ### Node 4: Discovery Inference (`d_prediction`)
-* **Primary Role:** Final Lead Scoring and Reporting.
-* **Inputs:** `peptide_features.csv`, `peptide_guardian_model.pkl`, `label_encoder.pkl`.
-* **Processing Logic:** Performs batch inference, filters by the `confidence_threshold` set in `global_params.json`, and ranks high-interest leads.
-* **Outputs:** `guardian_leads.csv`, `final_discovery_report.html`.
+* **Objective**: High-Confidence Lead Ranking and Final Synthesis.
+* **Discovery Logic**: Applies the finalized model to the feature matrix. It implements a **Confidence Threshold Filter** (configured in `global_params.json`). 
+* **Key Features**: 
+    * **Specialty Prediction**: Decodes numeric labels back to biological classes (e.g., AMP, Non-AMP).
+    * **Advanced Reporting**: The `final_discovery_report.html` uses an embedded CSS grid and `SheetJS`. It highlights cyclizable leads in green for high structural stability.
+    * **Excel Export**: A one-click "Download Lead List" button for immediate lab transition.
+* **Inputs**: `peptide_features.csv`, `.pkl` artifacts from Node 3.
+* **Outputs**: `guardian_leads.csv`, `final_discovery_report.html`.
 
 ---
 
-## Artifact Harvesting and Deployment
+## Artifact Harvesting Summary
 
-The Silva Engine aggregates outputs from the isolated node directories into a centralized root `outputs/` folder upon completion.
+The Silva Engine aggregates outputs from the isolated node directories into a centralized root `outputs/` folder.
 
-| Artifact | Source Node | Scientific Utility |
+| Artifact | Origin | Scientific Utility |
 | :--- | :--- | :--- |
-| **guardian_leads.csv** | `d_prediction` | Primary lead list for in-vitro testing. |
-| **final_discovery_report.html** | `d_prediction` | Presentation-ready summary with data export. |
-| **peptide_guardian_model.pkl** | `c_model` | Trained weights for future batch inference. |
-| **screening_report.html** | `b_features` | Initial biophysical screening and diversity audit. |
+| **guardian_leads.csv** | Node 4 | The finalized discovery list for laboratory synthesis. |
+| **final_discovery_report.html** | Node 4 | The master dashboard with interactive leads and Excel export. |
+| **peptide_guardian_model.pkl** | Node 3 | The serialized "Golden Model" for future batch predictions. |
+| **screening_report.html** | Node 2 | Early-stage visual audit of sequence diversity and biophysical distribution. |
+
+---
+
+## Deployment and Execution
+
+### 1. Configuration
+Modify `global_params.json` at the project root:
+```json
+{
+    "input_file": "input.fasta",
+    "confidence_threshold": 0.85
+}
+```
+
+### 2. Execution via Silva CLI
+Trigger the automated pipeline:
+```bash
+silva .
+```
+
+### 3. Real-Time Telemetry
+Monitor unbuffered terminal output and node health:
+```bash
+silva 
+```
 
 ---
 
 ## References
-1. **Cock, P. J., et al. (2009).** *Biopython: freely available Python tools for computational molecular biology and bioinformatics.* Bioinformatics.
-2. **Pedregosa, F., et al. (2011).** *Scikit-learn: Machine Learning in Python.* JMLR.
-3. **Kyte, J., & Doolittle, R. F. (1982).** *A simple method for displaying the hydropathic character of a protein.* JMB.
-4. **Silva Architecture Documentation (2026).** *Standardized Orchestration for Containerized Bioinformatics Pipelines.*
 
-**Lead Developer:** @Saadalishah107  
-**Engine Version:** Silva March 2026  
-**Project Status:** Active (Transitioned from `silva-test`)
+1. **Cock, P. J., et al. (2009).** *Biopython: freely available Python tools for computational molecular biology and bioinformatics.* Bioinformatics, 25(11), 1422-1423.
+2. **Pedregosa, F., et al. (2011).** *Scikit-learn: Machine Learning in Python.* Journal of Machine Learning Research, 12, 2825-2830.
+3. **Kyte, J., & Doolittle, R. F. (1982).** *A simple method for displaying the hydropathic character of a protein.* Journal of Molecular Biology, 157(1), 105-132.
+4. **Silva Architecture Documentation (2026).** *Standardized Orchestration for Containerized Bioinformatics Pipelines.* Internal Technical Specification.
+
+---
+
+**Lead Developer**: @Saadalishah107  
+**Engine Version**: Silva March 2026  
+**Project Status**: Active (Transitioned from silva-test)
