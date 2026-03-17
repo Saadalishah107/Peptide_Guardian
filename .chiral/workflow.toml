@@ -3,9 +3,6 @@ description = "Peptide Guardian pipeline"
 
 nodes = ["a_ingest", "b_features", "c_model", "d_prediction"]
 
-[publish]
-output_dir = "outputs"
-
 [dependencies]
 
 b_features = ["a_ingest"]
