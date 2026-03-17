@@ -1,4 +1,4 @@
-name = "silva-test"
+name = "Peptide_Guardian"
 description = "Peptide Guardian pipeline" 
 
 nodes = ["a_ingest", "b_features", "c_model", "d_prediction"]
