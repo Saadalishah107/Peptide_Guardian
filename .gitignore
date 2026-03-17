@@ -1,0 +1,33 @@
+# --- Python Environment ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# --- Model Artifacts (Node 3 Outputs) ---
+# We ignore these because they are reproducible by running Node 3
+*.pkl
+*.joblib
+
+# --- Data and Outputs ---
+# We ignore generated results to keep the repo lean
+outputs/
+*.csv
+!input_files/*.csv
+
+# --- HTML Reports ---
+# These are generated during the run and shouldn't be versioned
+*.html
+
+# --- Silva / Orchestration ---
+.chiral/logs/
+.chiral/tmp/
+.silva/
+
+# --- OS / IDE Specific ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
