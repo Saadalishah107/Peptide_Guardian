@@ -15,6 +15,7 @@ In peptide drug discovery, the primary bottleneck is the transition from biologi
 * **Structural Stability Identification:** The pipeline specifically evaluates Cysteine density to flag sequences capable of disulfide-bridge cyclization, hitting a critical theme of modern peptidomimetics.
 * **Ensemble Machine Learning:** By utilizing a soft-voting ensemble of Random Forest and Extra Trees, the engine achieves higher robustness than single-model architectures, particularly on the diverse datasets typical of Antimicrobial Peptides (AMPs).
 * **Biophysical ADMET Audit:** Leads are ranked not just on prediction confidence, but on their physiological suitability (Isoelectric point, Net Charge at pH 7.4, and GRAVY solubility scores).
+* **Robust Data Sanitization (Node 1):** The ingestion engine features an aggressive regex-based scrubber (`[^A-Z]`) that gracefully handles dirty FASTA inputs (e.g., hidden tabs, numbers, special characters) while perfectly extracting sequence labels and metadata for downstream tracking.
 
 ---
 
@@ -131,6 +132,12 @@ If you are executing the pipeline locally on a Linux machine using **rootless Po
   ```
 
 ---
+
+### Adversarial Validation & Robustness
+Peptide_Guardian has been rigorously stress-tested against "notorious" datasets. The ensemble model successfully navigates biophysical trickery, such as:
+* **Poly-Cysteine Traps:** Rejecting sequences that pass the structural cyclizability gate but lack true AMP biophysical properties.
+* **Poly-Lysine Traps:** Filtering out sequences with artificially inflated physiological Net Charge and pI scores.
+By learning the true feature importance of combined ADMET descriptors (Charge, GRAVY, pI), the soft-voting ensemble maintains high accuracy and successfully isolates true bioactive leads from biological decoys.
 
 ## References
 * Cock, P. J., et al. (2009). Biopython: freely available Python tools for computational molecular biology and bioinformatics.
